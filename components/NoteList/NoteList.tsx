@@ -1,70 +1,46 @@
-'use client'
-import Link from 'next/link'
 import css from './NoteList.module.css'
-import { Note } from '@/types/note'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Note } from '@/types/note'
+import Link from 'next/link'
+import Button from '../Button/Button'
 import { deleteNote } from '@/lib/api'
 
-interface NoteListProps {
-  items: Note[]
+type Props = {
+  notes: Note[]
 }
 
-export default function NoteList({ items }: NoteListProps) {
-  const qc = useQueryClient()
-
-  const delMut = useMutation({
-    mutationFn: (id: string) => deleteNote(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notes'] }),
+const NoteList = ({ notes }: Props) => {
+  const queryClient = useQueryClient()
+  const mutation = useMutation<void, unknown, string>({
+    mutationFn: (noteId) => deleteNote({ noteId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] })
+    },
   })
-
-  if (!items.length) return null
-
+  const handleDelteNotes = (noteId: string) => {
+    mutation.mutate(noteId)
+  }
   return (
     <ul className={css.list}>
-      {items.map((n) => (
-        <li key={n.id} className={css.listItem}>
-          <div
-            className={css.card}
-            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-          >
-            <div className={css.header}>
-              <h3 className={css.title}>{n.title}</h3>
-              <span className={css.badge}>{n.tag}</span>
-            </div>
-
-            <p className={css.content}>{n.content}</p>
-
-            <p className={css.meta}>
-              <span style={{ fontWeight: 600 }}>
-                <time suppressHydrationWarning>
-                  {new Date(n.createdAt).toLocaleString()}
-                </time>
-              </span>
-            </p>
-
-            <div
-              className={css.actions}
-              style={{ marginTop: 'auto', display: 'flex', gap: 12 }}
-            >
-              <Link
-                href={`/notes/${n.id}`}
-                className={css.button}
-                style={{ textDecoration: 'none' }}
-              >
-                View details
-              </Link>
-              <button
-                type="button"
-                className={css.button}
-                onClick={() => delMut.mutate(n.id)}
-                disabled={delMut.isPending}
-              >
-                Delete
-              </button>
-            </div>
+      {notes.map((note) => (
+        <li className={css.listItem} key={note.id}>
+          <Link href={`/notes/${note.id}`} className={css.content}>
+            <p className={css.title}>{note.title}</p>
+          </Link>
+          <div className={css.footer}>
+            <p className={css.tag}>{note.tag}</p>
+            <Button
+              typeBtn="button"
+              className={css.button}
+              onClick={() => handleDelteNotes(note.id)}
+              value="Delete"
+            />
           </div>
         </li>
       ))}
     </ul>
   )
 }
+
+export default NoteList

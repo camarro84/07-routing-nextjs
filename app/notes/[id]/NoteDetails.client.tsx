@@ -1,36 +1,36 @@
 'use client'
-import { useParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+
+import Loading from '@/app/loading'
 import { fetchNoteById } from '@/lib/api'
-import css from './NoteDetails.module.css'
+import { Note } from '@/types/note'
+import { useQuery } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
+import React from 'react'
+import Error from './error'
+import NotePreview from '@/components/NotePreview/NotePreview'
 
-export default function NoteDetailsClient() {
+type Props = {
+  data: Note
+  onClose: () => void
+}
+
+const Details = ({ onClose }: Props) => {
   const params = useParams()
-  const id = String(params.id)
+  const noteId = params.id as string
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['note', id],
-    queryFn: () => fetchNoteById(id),
-    refetchOnMount: false,
+  const { data, isLoading, isError, error } = useQuery<Note>({
+    queryKey: ['note', noteId],
+    queryFn: () => fetchNoteById({ noteId }),
+    enabled: !!noteId,
   })
-
-  if (isLoading) return <div>Loading...</div>
-  if (isError) return <div>Error: {(error as Error).message}</div>
-  if (!data) return null
-
+  if (isLoading) return <Loading />
+  if (isError) return <Error error={error} value="note details" />
+  if (!data) return <p>No note found</p>
   return (
-    <div className={css.container}>
-      <div className={css.item}>
-        <div className={css.header}>
-          <h2>{data.title}</h2>
-        </div>
-        <p className={css.content}>{data.content}</p>
-        <p className={css.date}>
-          <time suppressHydrationWarning dateTime={data.createdAt}>
-            {data.createdAt}
-          </time>
-        </p>
-      </div>
-    </div>
+    <>
+      <NotePreview data={data} onClose={onClose} />
+    </>
   )
 }
+
+export default Details

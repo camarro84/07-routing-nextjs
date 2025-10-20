@@ -1,100 +1,109 @@
 'use client'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Formik, Form, Field, ErrorMessage, type FormikHelpers } from 'formik'
+
+import React from 'react'
+import { Formik, Form, Field, ErrorMessage, FormikHelpers } from 'formik'
 import * as Yup from 'yup'
-import { Note, NoteTag } from '@/types/note'
-import { createNote } from '@/lib/api'
 import css from './NoteForm.module.css'
+import Button from '../Button/Button'
+import { useQueryClient } from '@tanstack/react-query'
+import { createNote } from '@/lib/api'
 
-interface NoteFormProps {
-  onCancel: () => void
-}
-
-type FormValues = {
+type NoteFormValues = {
   title: string
-  content?: string
-  tag: NoteTag
+  content: string
+  tag: 'Work' | 'Personal' | 'Meeting' | 'Shopping' | 'Todo'
 }
 
-const Schema = Yup.object({
-  title: Yup.string().min(3).max(50).required(),
-  content: Yup.string().max(500).optional(),
-  tag: Yup.mixed<NoteTag>()
-    .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'])
+type Props = {
+  onSuccess: () => void
+  onClose: () => void
+}
+
+const validationSchema = Yup.object({
+  title: Yup.string().required('Title is required'),
+  content: Yup.string().required('Content is required'),
+  tag: Yup.string()
+    .oneOf(['Work', 'Personal', 'Meeting', 'Shopping', 'Todo'])
     .required(),
 })
 
-export default function NoteForm({ onCancel }: NoteFormProps) {
-  const qc = useQueryClient()
+const NoteForm = ({ onSuccess, onClose }: Props) => {
+  const queryClient = useQueryClient()
+  const initialValues: NoteFormValues = {
+    title: '',
+    content: '',
+    tag: 'Todo',
+  }
 
-  const createMut = useMutation({
-    mutationFn: (values: FormValues) => createNote(values),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['notes'] })
-      onCancel()
-    },
-  })
+  const handleSubmit = async (
+    values: NoteFormValues,
+    { setSubmitting, resetForm }: FormikHelpers<NoteFormValues>,
+  ) => {
+    try {
+      await createNote(values)
+      await queryClient.invalidateQueries({ queryKey: ['notes'] })
+      resetForm()
+      onSuccess()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
-    <Formik<FormValues>
-      initialValues={{
-        title: '',
-        content: '',
-        tag: 'Todo',
-      }}
-      validationSchema={Schema}
-      onSubmit={async (
-        values,
-        { setSubmitting }: FormikHelpers<FormValues>,
-      ) => {
-        try {
-          await createMut.mutateAsync(values)
-        } finally {
-          setSubmitting(false)
-        }
-      }}
+    <Formik
+      initialValues={initialValues}
+      validationSchema={validationSchema}
+      onSubmit={handleSubmit}
     >
       {({ isSubmitting }) => (
         <Form className={css.form}>
           <div className={css.formGroup}>
-            <label>Title</label>
-            <Field name="title" className={css.input} />
-            <ErrorMessage name="title" component="div" />
+            <label htmlFor="title">Title</label>
+            <Field name="title" type="text" as="input" className={css.input} />
+            <ErrorMessage name="title" component="div" className={css.error} />
           </div>
 
           <div className={css.formGroup}>
-            <label>Content</label>
-            <Field
-              as="textarea"
+            <label htmlFor="content">Content</label>
+            <Field name="content" as="textarea" className={css.textarea} />
+            <ErrorMessage
               name="content"
-              rows={6}
-              className={css.textarea}
+              component="div"
+              className={css.error}
             />
-            <ErrorMessage name="content" component="div" />
           </div>
 
           <div className={css.formGroup}>
-            <label>Tag</label>
-            <Field as="select" name="tag" className={css.select}>
-              <option value="Todo">Todo</option>
+            <label htmlFor="tag">Tag</label>
+            <Field name="tag" as="select" className={css.select}>
               <option value="Work">Work</option>
               <option value="Personal">Personal</option>
               <option value="Meeting">Meeting</option>
               <option value="Shopping">Shopping</option>
+              <option value="Todo">Todo</option>
             </Field>
-            <ErrorMessage name="tag" component="div" />
+            <ErrorMessage name="tag" component="div" className={css.error} />
           </div>
-
-          <div className={css.actions}>
-            <button type="submit" disabled={isSubmitting}>
-              Create
-            </button>
-            <button type="button" onClick={onCancel}>
-              Cancel
-            </button>
+          <div className={css.btnGroup}>
+            <Button
+              typeBtn="button"
+              className={css.cancelButton}
+              value="Cancel"
+              onClick={onClose}
+            />
+            <Button
+              typeBtn="submit"
+              disabled={isSubmitting}
+              className={css.submitButton}
+              value="Create"
+            />
           </div>
         </Form>
       )}
     </Formik>
   )
 }
+
+export default NoteForm

@@ -1,72 +1,47 @@
-import axios, { AxiosInstance } from 'axios'
-import { Note, NoteTag } from '@/types/note'
+import axios from 'axios'
+import { Note, NoteListResponse } from '../types/note'
 
-const api: AxiosInstance = axios.create({
-  baseURL: 'https://notehub-public.goit.study/api',
-})
+axios.defaults.baseURL = 'https://notehub-public.goit.study/api'
+const apiKey = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN
 
-api.interceptors.request.use((config) => {
-  const token = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN
-  if (token) {
-    config.headers = config.headers ?? {}
-    ;(config.headers as Record<string, string>).Authorization =
-      `Bearer ${token}`
-  }
-  return config
-})
-
-export interface FetchNotesParams {
+export type GetNotesParams = {
+  search?: string
+  tag?: 'Work' | 'Personal' | 'Meeting' | 'Shopping' | 'Todo'
   page?: number
   perPage?: number
-  search?: string
+  sortBy?: 'created' | 'updated'
 }
 
-export interface FetchNotesResponse {
-  notes: Note[]
-  totalPages: number
-}
-
-interface ItemResponse {
-  item: Note
-}
-
-type CreatePayload = {
-  title: string
-  content?: string
-  tag: NoteTag
-}
-
-type UpdatePayload = Partial<CreatePayload>
-
-export async function fetchNotes(
-  params: FetchNotesParams = {},
-): Promise<FetchNotesResponse> {
-  const { page = 1, perPage = 12, search = '' } = params
-  const res = await api.get<FetchNotesResponse>('/notes', {
-    params: { page, perPage, search },
+export const getNotes = async (params: GetNotesParams = {}) => {
+  const res = await axios.get<NoteListResponse>('/notes', {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+    params,
   })
   return res.data
 }
 
-export async function fetchNoteById(id: string): Promise<Note> {
-  const res = await api.get<ItemResponse>(`/notes/${id}`)
-  return res.data.item
+export const fetchNoteById = async ({ noteId }: { noteId: string }) => {
+  const res = await axios.get<Note>(`/notes/${noteId}`, {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  })
+  return res.data
 }
 
-export async function createNote(payload: CreatePayload): Promise<Note> {
-  const res = await api.post<ItemResponse>('/notes', payload)
-  return res.data.item
+export const deleteNote = async ({ noteId }: { noteId: string }) => {
+  await axios.delete<Note>(`/notes/${noteId}`, {
+    headers: { accept: 'application/json', Authorization: `Bearer ${apiKey}` },
+  })
 }
 
-export async function updateNote(
-  id: string,
-  payload: UpdatePayload,
-): Promise<Note> {
-  const res = await api.patch<ItemResponse>(`/notes/${id}`, payload)
-  return res.data.item
-}
-
-export async function deleteNote(id: string): Promise<Note> {
-  const res = await api.delete<ItemResponse>(`/notes/${id}`)
-  return res.data.item
+export const createNote = async (note: {
+  title: string
+  content: string
+  tag: 'Work' | 'Personal' | 'Meeting' | 'Shopping' | 'Todo'
+}) => {
+  await axios.post<Note>('/notes', note, {
+    headers: {
+      accept: 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+  })
 }
