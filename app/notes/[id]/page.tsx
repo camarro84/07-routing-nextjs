@@ -1,9 +1,10 @@
-import NoteModal from '@/app/@modal/(.)notes/[id]/page'
+import { fetchNoteById } from '@/lib/api'
+import NotePreviewDetails from '../../@modal/(.)notes/[id]/NotePreview.client'
 
-type Props = {
-  params: { id: string }
-}
+type Props = { params: Promise<{ id: string }> }
 
-export default function NotesPage({ params }: Props) {
-  return <NoteModal params={params} />
+export default async function Page({ params }: Props) {
+  const { id } = await params
+  const data = await fetchNoteById({ noteId: id })
+  return <NotePreviewDetails data={data} />
 }
