@@ -1,31 +1,32 @@
+'use client'
+
 import css from './NoteList.module.css'
-
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Note } from '@/types/note'
 import Link from 'next/link'
-import Button from '../Button/Button'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteNote } from '@/lib/api'
+import { Note } from '@/types/note'
+import Button from '../Button/Button'
 
-type Props = {
-  notes: Note[]
-}
+type Props = { notes?: Note[] }
 
-const NoteList = ({ notes }: Props) => {
+export default function NoteList({ notes = [] }: Props) {
   const queryClient = useQueryClient()
   const mutation = useMutation<void, unknown, string>({
     mutationFn: (noteId) => deleteNote({ noteId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notes'] }),
   })
-  const handleDelteNotes = (noteId: string) => {
-    mutation.mutate(noteId)
-  }
+
+  if (!notes.length) return <p>No notes found.</p>
+
   return (
     <ul className={css.list}>
       {notes.map((note) => (
         <li className={css.listItem} key={note.id}>
-          <Link href={`/notes/${note.id}`} className={css.content}>
+          <Link
+            href={`/notes/${note.id}`}
+            className={css.content}
+            scroll={false}
+          >
             <p className={css.title}>{note.title}</p>
           </Link>
           <div className={css.footer}>
@@ -33,7 +34,7 @@ const NoteList = ({ notes }: Props) => {
             <Button
               typeBtn="button"
               className={css.button}
-              onClick={() => handleDelteNotes(note.id)}
+              onClick={() => mutation.mutate(note.id)}
               value="Delete"
             />
           </div>
@@ -42,5 +43,3 @@ const NoteList = ({ notes }: Props) => {
     </ul>
   )
 }
-
-export default NoteList

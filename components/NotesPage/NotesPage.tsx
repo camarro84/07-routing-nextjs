@@ -1,57 +1,48 @@
 'use client'
 
-import React, { ReactNode, useState } from 'react'
-
+import SearchBox from '@/components/SearchBox/SearchBox'
+import Pagination from '@/components/Pagination/Pagination'
 import css from './NotesPage.module.css'
-import Button from '../Button/Button'
-import SearchBox from '../SearchBox/SearchBox'
-import Pagination from '../Pagination/Pagination'
-import Modal from '../Modal/Modal'
-import NoteForm from '../NoteForm/NoteForm'
-import { NoteListResponse } from '@/types/note'
-import LayoutNotes from '../LayoutNotes/LayoutNotes'
-import SidebarNotes from '../SidebarNotes/SidebarNotes'
-import NoteList from '../NoteList/NoteList'
+import type { NoteListResponse } from '@/types/note'
 
 type Props = {
   data: NoteListResponse
-  children: ReactNode
-  setPage: (page: number) => void
-  setSearch: (search: string) => void
+  currentPage: number // 0-based
+  onPageChange: (pageIndex: number) => void
+  onSearch: (v: string) => void
+  onOpenCreate: () => void
+  children: React.ReactNode
 }
 
-const NotesPage = ({ data, setPage, setSearch }: Props) => {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+export default function NotesPage({
+  data,
+  currentPage,
+  onPageChange,
+  onSearch,
+  onOpenCreate,
+  children,
+}: Props) {
   return (
     <div className={css.app}>
+      {/* ВЕРХНЯЯ ПАНЕЛЬ: поиск слева, кнопка справа */}
       <div className={css.toolbar}>
-        <SearchBox onSearch={setSearch} />
-        <Pagination totalPages={data.totalPages} onPageChange={setPage} />
-        <Button
-          className={css.button}
-          value="Create note +"
-          typeBtn="button"
-          onClick={() => setIsModalOpen(true)}
-        />
+        <SearchBox onSearch={onSearch} placeholder="Search notes..." />
+        <button className={css.button} onClick={onOpenCreate}>
+          Create note +
+        </button>
       </div>
-      <LayoutNotes sidebar={<SidebarNotes />}>
-        {data.notes.length > 0 ? (
-          <NoteList notes={data.notes} />
-        ) : (
-          <p>No notes found.</p>
-        )}
-      </LayoutNotes>
 
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onSuccess={() => setIsModalOpen(false)}
-            onClose={() => setIsModalOpen(false)}
-          />
-        </Modal>
-      )}
+      {/* ПАГИНАЦИЯ СВЕРХУ ПО ЦЕНТРУ */}
+      <Pagination
+        pageCount={data.totalPages}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+      />
+
+      <hr className={css.divider} />
+
+      {/* НИЖЕ — разметка со списком/контентом */}
+      {children}
     </div>
   )
 }
-
-export default NotesPage

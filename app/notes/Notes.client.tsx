@@ -1,71 +1,50 @@
 'use client'
+
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { fetchNotes } from '@/lib/api'
-import SearchBox from '@/components/SearchBox/SearchBox'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { getNotes } from '@/lib/api'
+import type { NoteListResponse } from '@/types/note'
+import NotesPage from '@/components/NotesPage/NotesPage'
 import NoteList from '@/components/NoteList/NoteList'
-import Pagination from '@/components/Pagination/Pagination'
 import Modal from '@/components/Modal/Modal'
 import NoteForm from '@/components/NoteForm/NoteForm'
-import { useDebounce } from 'use-debounce'
-import css from './NotesPage.module.css'
+import Loading from '@/app/loading'
+import Error from './error'
 
-export default function NotesClient() {
-  const [page, setPage] = useState(0)
-  const [term, setTerm] = useState('')
+export default function Notes() {
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
-  const [debounced] = useDebounce(term.trim(), 300)
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['notes', { page: page + 1, perPage: 12, search: debounced }],
-    queryFn: () =>
-      fetchNotes({ page: page + 1, perPage: 12, search: debounced }),
-    placeholderData: (prev) => prev,
+  const { data, isLoading, isError, error } = useQuery<NoteListResponse>({
+    queryKey: ['notes', { page, perPage: 10, search }],
+    queryFn: () => getNotes({ page, perPage: 10, search, sortBy: 'created' }),
+    placeholderData: keepPreviousData,
   })
 
-  const notes = data?.notes ?? []
-  const totalPages = data?.totalPages ?? 1
+  if (isLoading) return <Loading />
+  if (isError) return <Error error={error} />
+  if (!data) return <p>No note found</p>
 
   return (
-    <div className={css.app}>
-      <div className={css.toolbar}>
-        <SearchBox
-          value={term}
-          onChange={(v) => {
-            setTerm(v)
-            setPage(0)
-          }}
-          placeholder="Search notes..."
-        />
-        <button className={css.button} onClick={() => setOpen(true)}>
-          New note
-        </button>
-      </div>
-
-      {isLoading && <p>Loading...</p>}
-      {isError && <p>Error: {(error as Error).message}</p>}
-
-      {!isLoading && !isError && (
-        <>
-          {notes.length > 0 ? (
-            <NoteList items={notes} />
-          ) : (
-            <p>No notes found</p>
-          )}
-          {totalPages > 1 && (
-            <Pagination
-              pageCount={totalPages}
-              currentPage={page}
-              onPageChange={setPage}
-            />
-          )}
-        </>
-      )}
+    <>
+      <NotesPage
+        data={data}
+        currentPage={page - 1}
+        onPageChange={(idx) => setPage(idx + 1)}
+        onSearch={(v) => {
+          setSearch(v)
+          setPage(1)
+        }}
+        onOpenCreate={() => setOpen(true)}
+      >
+        <NoteList notes={data.notes ?? []} />
+      </NotesPage>
 
       <Modal open={open} onClose={() => setOpen(false)}>
         <h3>Create note</h3>
         <NoteForm onCancel={() => setOpen(false)} />
       </Modal>
-    </div>
+    </>
   )
 }

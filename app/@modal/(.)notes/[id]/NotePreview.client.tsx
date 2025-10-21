@@ -1,26 +1,24 @@
 'use client'
 
-import Modal from '@/components/Modal/Modal'
-import NotePreview from '@/components/NotePreview/NotePreview'
-import { Note } from '@/types/note'
 import { useRouter } from 'next/navigation'
+import Modal from '@/components/Modal/Modal'
 
-type Props = {
-  data: Note
+type NoteData = {
+  id: string
+  title: string
+  content: string
+  tag: 'Work' | 'Personal' | 'Meeting' | 'Shopping' | 'Todo'
 }
 
-const NotePreviewDetails = ({ data }: Props) => {
+export default function NotePreviewModal({ data }: { data: NoteData }) {
   const router = useRouter()
-
-  const handleClose = () => {
-    router.back()
-  }
-
   return (
-    <Modal onClose={handleClose}>
-      <NotePreview data={data} onClose={handleClose} />
+    <Modal open={true} onClose={() => router.back()}>
+      <h3>{data.title}</h3>
+      <p>{data.content}</p>
+      <p>
+        <strong>Tag:</strong> {data.tag}
+      </p>
     </Modal>
   )
 }
-
-export default NotePreviewDetails

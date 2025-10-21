@@ -1,18 +1,26 @@
 'use client'
 
 type Props = {
-  error: Error
-  value: string
+  error: unknown
+  value?: string
 }
 
-const Error = ({ error, value }: Props) => {
+function hasMessage(e: unknown): e is { message: string } {
   return (
-    <div className="content">
-      <p>
-        Could not fetch{`${value}`}. {error.message}
-      </p>
-    </div>
+    typeof e === 'object' &&
+    e !== null &&
+    'message' in e &&
+    typeof (e as { message: unknown }).message === 'string'
   )
 }
 
-export default Error
+export default function Error({ error, value }: Props) {
+  const msg = hasMessage(error)
+    ? error.message
+    : String(error ?? 'Unknown error')
+  return (
+    <p>
+      Failed to load {value ?? 'data'}: {msg}
+    </p>
+  )
+}
