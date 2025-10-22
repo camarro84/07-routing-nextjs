@@ -4,16 +4,18 @@ import css from './NoteList.module.css'
 import Link from 'next/link'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteNote } from '@/lib/api'
-import { Note } from '@/types/note'
+import type { Note } from '@/types/note'
 import Button from '../Button/Button'
 
 type Props = { notes?: Note[] }
 
 export default function NoteList({ notes = [] }: Props) {
   const queryClient = useQueryClient()
-  const mutation = useMutation<void, unknown, string>({
+  const mutation = useMutation<Note, unknown, string>({
     mutationFn: (noteId) => deleteNote({ noteId }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notes'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] })
+    },
   })
 
   if (!notes.length) return <p>No notes found.</p>
