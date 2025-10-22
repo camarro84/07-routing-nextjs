@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getNotes, type GetNotesParams } from '@/lib/api'
 import type { NoteListResponse } from '@/types/note'
@@ -15,19 +15,32 @@ type NoteProps = { tag?: GetNotesParams['tag'] }
 
 export default function Notes({ tag }: NoteProps) {
   const [page, setPage] = useState(1)
+
+  // rawSearch — миттєве значення з інпуту; search — дебаунсене
+  const [rawSearch, setRawSearch] = useState('')
   const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(rawSearch)
+      setPage(1) // скидаємо сторінку при зміні пошуку після debounce
+    }, 500)
+    return () => clearTimeout(t)
+  }, [rawSearch])
+
   const [open, setOpen] = useState(false)
 
+  const queryArgs = {
+    page,
+    perPage: 10,
+    search,
+    sortBy: 'created' as const,
+    ...(tag ? { tag } : {}),
+  }
+
   const { data, isLoading, isError, error } = useQuery<NoteListResponse>({
-    queryKey: ['notes', { page, perPage: 10, search, tag }],
-    queryFn: () =>
-      getNotes({
-        page,
-        perPage: 10,
-        search,
-        sortBy: 'created',
-        ...(tag ? { tag } : {}),
-      }),
+    queryKey: ['notes', queryArgs],
+    queryFn: () => getNotes(queryArgs),
     placeholderData: keepPreviousData,
   })
 
@@ -41,10 +54,7 @@ export default function Notes({ tag }: NoteProps) {
         data={data}
         currentPage={page - 1}
         onPageChange={(idx) => setPage(idx + 1)}
-        onSearch={(v) => {
-          setSearch(v)
-          setPage(1)
-        }}
+        onSearch={(v) => setRawSearch(v)}
         onOpenCreate={() => setOpen(true)}
       >
         <NoteList notes={data.notes ?? []} />

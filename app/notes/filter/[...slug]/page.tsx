@@ -1,5 +1,10 @@
-import { GetNotesParams } from '@/lib/api'
+import { GetNotesParams, getNotes } from '@/lib/api'
 import Notes from './Notes.client'
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query'
 
 const allowed = ['Work', 'Personal', 'Meeting', 'Shopping', 'Todo'] as const
 type AllowedTag = (typeof allowed)[number]
@@ -17,5 +22,26 @@ export default async function NotesPage({ params }: Props) {
       ? (raw as AllowedTag)
       : undefined
 
-  return <Notes tag={tag} />
+  // Server prefetch: початковий стан (page=1, perPage=10, search='', sortBy='created')
+  const queryClient = new QueryClient()
+  const initialQuery = {
+    page: 1,
+    perPage: 10,
+    search: '',
+    sortBy: 'created' as const,
+    ...(tag ? { tag } : {}),
+  }
+
+  await queryClient.prefetchQuery({
+    queryKey: ['notes', initialQuery],
+    queryFn: () => getNotes(initialQuery),
+  })
+
+  const dehydratedState = dehydrate(queryClient)
+
+  return (
+    <HydrationBoundary state={dehydratedState}>
+      <Notes tag={tag} />
+    </HydrationBoundary>
+  )
 }
