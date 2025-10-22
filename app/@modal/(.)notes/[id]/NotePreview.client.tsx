@@ -12,6 +12,7 @@ export default function NotePreviewModal({ id }: { id: string }) {
   const { data, isLoading, isError, error } = useQuery<Note>({
     queryKey: ['note', id],
     queryFn: () => fetchNoteById({ noteId: id }),
+    refetchOnMount: false,
   })
 
   return (
