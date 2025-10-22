@@ -15,10 +15,8 @@ export default function NoteDetails({ id }: { id: string }) {
     queryFn: () => fetchNoteById({ noteId: id }),
     enabled: !!id,
   })
-
   if (isLoading) return <Loading />
   if (isError) return <Error error={error} value="note details" />
   if (!data) return <p>No note found</p>
-
   return <NotePreview data={data} onClose={() => router.back()} />
 }
