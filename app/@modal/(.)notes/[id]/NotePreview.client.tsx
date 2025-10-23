@@ -17,6 +17,25 @@ export default function NotePreviewModal({ id }: { id: string }) {
 
   return (
     <Modal open={true} onClose={() => router.back()}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <h3 style={{ margin: 0 }}>Note details</h3>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="Close modal"
+        >
+          ✕
+        </button>
+      </div>
+
       {isLoading && <p>Loading...</p>}
       {isError && (
         <p>
@@ -26,7 +45,7 @@ export default function NotePreviewModal({ id }: { id: string }) {
       )}
       {data && (
         <>
-          <h3>{data.title}</h3>
+          <h4 style={{ marginTop: 0 }}>{data.title}</h4>
           <p>{data.content}</p>
           <p>
             <strong>Tag:</strong> {data.tag}
